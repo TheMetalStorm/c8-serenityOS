@@ -4,6 +4,7 @@
 #include "Chip8.h"
 #include "AK/Random.h"
 #include "LibCore/File.h"
+#include <stdlib.h>
 
 unsigned int const FONTSET_SIZE = 80;
 
@@ -37,13 +38,13 @@ ErrorOr<void> Chip8::read_rom(StringView rom_path)
 
     return {};
 }
-bool Chip8::is_running()
-{
-    return true;
-}
+//bool Chip8::is_running()
+//{
+//    return true;
+//}
 void Chip8::run()
 {
-    while(is_running()){
+    while(program_counter < 0xFFF){
         //instruction fetch
         auto next_instruction = get_next_instruction();
         //instruction decode
@@ -67,6 +68,21 @@ Chip8::Chip8()
 }
 void Chip8::decode_and_execute(uint16_t instruction){
     switch (instruction) {
-
+    case 0x00E0: //CLS
+        memset(video, 0, sizeof(video));
+        break;
+    case 0x00EE: //RET
+        program_counter = stack.pop().release_value();
+        break;
+    case 0x1000 ... 0x1FFF: //JP addr
+        program_counter = instruction & 0x0FFF;
+        break;
+    case 0x2000 ... 0x2FFF: //CALL addr
+        stack.push(program_counter).release_value();
+        program_counter = instruction & 0x0FFF;
+        break;
+    default:
+        if(instruction != 0)
+            outln("UNSUPPORTED INSTRUCTION: {}", instruction);
     }
 }

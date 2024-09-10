@@ -13,14 +13,15 @@ public:
     Chip8();
     const uint16_t font_start = 0x050;
     const uint16_t rom_start = 0x200;
+    const uint16_t rom_end = 0xFFF;
     uint8_t memory[4096];
     uint8_t registers[16];
     uint16_t index_register{};
     uint16_t program_counter{};
-    uint8_t stack_pointer{};
+//    uint8_t stack_pointer{};
     uint8_t delay_timer{};
     uint8_t sound_timer{};
-    Stack s = Stack(16);
+    Stack stack = Stack(16);
     uint8_t keypad[16]{};
     uint32_t video[64 * 32]{};
     uint16_t opcode{};
