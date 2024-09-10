@@ -5,7 +5,7 @@ serenity_component(
 )
 
 set(SOURCES
-        src/main.cpp src/Chip8.cpp
+        src/main.cpp src/Chip8.cpp src/screen.cpp
 )
 
 serenity_app(c8 ICON app-calculator)

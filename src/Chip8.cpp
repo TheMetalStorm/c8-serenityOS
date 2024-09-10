@@ -2,9 +2,6 @@
 // Created by arapo on 10.09.2024.
 //
 #include "Chip8.h"
-#include "AK/Random.h"
-#include "LibCore/File.h"
-#include <stdio.h>
 
 unsigned int const FONTSET_SIZE = 80;
 
@@ -38,23 +35,24 @@ ErrorOr<void> Chip8::read_rom(StringView rom_path)
 
     return {};
 }
-//bool Chip8::is_running()
-//{
-//    return true;
-//}
+
 ErrorOr<void> Chip8::run()
 {
     while(program_counter < 0xFFF){
         //instruction fetch
         auto next_instruction = get_next_instruction();
+        printf("%x\n", next_instruction);
         //instruction decode
         TRY(decode_and_execute(next_instruction));
+
+
+        (void)getchar();
     }
     return {};
 }
 
 uint16_t Chip8::get_next_instruction(){
-    uint16_t instruction = memory[program_counter++] << 8;
+    uint16_t const instruction = memory[program_counter++] << 8;
     return instruction | memory[program_counter++] ;
 }
 
@@ -66,14 +64,15 @@ Chip8::Chip8()
         memory[font_start+i] = fontset[i];
     }
 
+
+
 }
 ErrorOr<void> Chip8::decode_and_execute(uint16_t instruction){
-    uint8_t kk, Vx, Vy;//, n, nnn;
-//    printf("INSTRUCTION %02x %02x ...\n", instruction & 0xFF,  (instruction>>8) & 0xFF);
-    printf("INSTRUCTION %04x \n",instruction);
+    uint16_t kk, Vx, Vy, nnn, n;
+
     switch (instruction) {
         case 0x00E0: //CLS
-            memset(video, 0, sizeof(video));
+            screen.clear();
             break;
         case 0x00EE: //RET
             program_counter = TRY(stack.pop());
@@ -82,7 +81,6 @@ ErrorOr<void> Chip8::decode_and_execute(uint16_t instruction){
             program_counter = get_nnn(instruction);
             break;
         case 0x2000 ... 0x2FFF: //2nnn CALL addr nnn
-            outln("CALL {}", program_counter);
             TRY(stack.push(program_counter));
             program_counter = get_nnn(instruction);
             break;
@@ -115,43 +113,69 @@ ErrorOr<void> Chip8::decode_and_execute(uint16_t instruction){
         case 0x7000 ... 0x7FFF: //7xkk - ADD Vx, byteSet Vx = Vx + kk.
             Vx = get_Vx(instruction);
             kk = get_kk(instruction);
+            printf("kk = %d\n", kk);
             registers[Vx] += kk;
+            printf("v0 = %d\n", registers[Vx]);
+
             break;
         case 0x8000 ... 0x8FFF:
             handle_8xxx(instruction);
+            break;
+        case 0xA000 ... 0xAFFF: //Annn - LD I, addr Set I = nnn.
+            nnn = get_nnn(instruction);
+            index_register = nnn;
+            break;
+        case 0xD000 ... 0xDFFF: //Dxyn - DRW Vx, Vy, nibble Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
+            Vx = registers[get_Vx(instruction)];
+            Vy = registers[get_Vy(instruction)];
+
+            n = get_n(instruction);
+
+
+            registers[0xF] = 0;
+
+            for(int y = 0; y< n; y++){
+                uint8_t const sprite_line = memory[index_register  + y];
+                for(int x = 0; x< 8; x++){
+                    uint8_t const bit = get_bit(sprite_line, 7-x);
+                    auto *Vf = &registers[0xF];
+                    screen.setPixel(x + Vx ,y + Vy , bit, Vf);
+                }
+            }
+            screen.print();
             break;
         default:
             if(instruction != 0)
                 printf("UNKNOWN\n");
 
     }
-
     return {};
-
-
 }
 
 
-uint8_t Chip8::get_kk(uint8_t instruction) {
+uint16_t Chip8::get_bit(uint16_t byte, uint8_t bit){
+    return (byte >> bit) & 1;
+}
+uint16_t Chip8::get_kk(uint16_t instruction) {
     return (instruction & 0x00FF);
 }
-uint8_t Chip8::get_Vx(uint8_t instruction) {
+uint16_t Chip8::get_Vx(uint16_t instruction) {
     return (instruction & 0x0F00) >> 8;
 }
-uint8_t Chip8::get_Vy(uint8_t instruction) {
+uint16_t Chip8::get_Vy(uint16_t instruction) {
     return (instruction & 0x00F0) >> 4;
 }
-uint8_t Chip8::get_nnn(uint8_t instruction) {
-    return instruction & 0x0FFF;
+uint16_t Chip8::get_nnn(uint16_t instruction) {
+    return instruction & 0xFFF;
 }
-uint8_t Chip8::get_n(uint8_t instruction) {
+uint16_t Chip8::get_n(uint16_t instruction) {
     return instruction & 0x000F;
 }
-void Chip8::handle_8xxx(uint8_t instruction)
+void Chip8::handle_8xxx(uint16_t instruction)
 {
-    uint8_t n = get_n(instruction);
-    uint8_t Vx = get_Vx(instruction);
-    uint8_t Vy= get_Vy(instruction);
+    uint16_t const n = get_n(instruction);
+    uint16_t  const Vx = get_Vx(instruction);
+    uint16_t const  Vy= get_Vy(instruction);
 
     switch (n) {
         case 0x0: //8xy0 - LD Vx, VySet Vx = Vy.
