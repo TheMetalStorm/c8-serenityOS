@@ -65,5 +65,8 @@ Chip8::Chip8()
     }
 
 }
-void Chip8::decode_and_execute(uint16_t){
+void Chip8::decode_and_execute(uint16_t instruction){
+    switch (instruction) {
+
+    }
 }
