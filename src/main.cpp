@@ -6,6 +6,6 @@ ErrorOr<int> serenity_main(Main::Arguments){
     Chip8 c8 = Chip8();
 
     TRY(c8.read_rom("/home/anon/IBM Logo.ch8"sv));
-    c8.run();
+    TRY(c8.run());
     return 0;
 }
