@@ -293,6 +293,10 @@ void Chip8::handle_8xxx(uint16_t instruction)
 }
 void Chip8::handle_input()
 {
+    //TODO: consider this (consider this!) (its a reference to "losing my religion")
+    //https://retrocomputing.stackexchange.com/questions/358/how-are-held-down-keys-handled-in-chip-8
+
+    //FIXME: crash when i press CTRL while SDL window is in focus
     SDL_Event event;
     while (SDL_PollEvent(&event) != 0) {
         switch (event.type) {

@@ -26,13 +26,22 @@ void Screen::clear()
 {
     memset(video, 0, sizeof(video));
 }
+
+//TODO sth like this?
+//        ErrorOr<NonnullOwnPtr<UHCIRootHub>> UHCIRootHub::try_create(NonnullLockRefPtr<UHCIController> uhci_controller)
+//        {
+//            return adopt_nonnull_own_or_enomem(new (nothrow) UHCIRootHub(move(uhci_controller)));
+//        }
 Screen::Screen()
 {
     SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr, "SDL failed to initialise: %s\n", SDL_GetError());
+
+
+
         //TODO error handling
-//        return 1;
+        //return 1;
     }
     window = SDL_CreateWindow("SDL Example", /* Title of the SDL window */
         SDL_WINDOWPOS_UNDEFINED, /* Position x of the window */
@@ -44,12 +53,14 @@ Screen::Screen()
     if (window == NULL) {
         fprintf(stderr, "SDL window failed to initialise: %s\n", SDL_GetError());
         //TODO error handling
-        //        return 1;
+        //return 1;
     }
 }
 
 Screen::~Screen()
 {
-    SDL_DestroyWindow(window);
+    if(window){
+        SDL_DestroyWindow(window);
+    }
     SDL_Quit();
 }
