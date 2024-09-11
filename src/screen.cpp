@@ -26,3 +26,30 @@ void Screen::clear()
 {
     memset(video, 0, sizeof(video));
 }
+Screen::Screen()
+{
+    SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        fprintf(stderr, "SDL failed to initialise: %s\n", SDL_GetError());
+        //TODO error handling
+//        return 1;
+    }
+    window = SDL_CreateWindow("SDL Example", /* Title of the SDL window */
+        SDL_WINDOWPOS_UNDEFINED, /* Position x of the window */
+        SDL_WINDOWPOS_UNDEFINED, /* Position y of the window */
+        200, /* Width of the window in pixels */
+        200, /* Height of the window in pixels */
+        0); /* Additional flag(s) */
+
+    if (window == NULL) {
+        fprintf(stderr, "SDL window failed to initialise: %s\n", SDL_GetError());
+        //TODO error handling
+        //        return 1;
+    }
+}
+
+Screen::~Screen()
+{
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+}

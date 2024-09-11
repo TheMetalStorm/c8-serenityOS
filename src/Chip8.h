@@ -30,11 +30,11 @@ public:
     uint8_t sound_timer{};
     Stack stack = Stack(16);
     bool keypad[16]{};
-    Screen screen = {};
+    bool is_running = true;
+    NonnullOwnPtr<Screen> screen = make<Screen>();
     uint16_t opcode{};
 
     ErrorOr<void> read_rom(StringView);
-    bool is_running();
     ErrorOr<void> run();
     uint16_t get_next_instruction();
     ErrorOr<void> decode_and_execute(uint16_t

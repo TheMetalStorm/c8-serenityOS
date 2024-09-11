@@ -7,6 +7,8 @@
 
 #include "AK/Types.h"
 #include "AK/OwnPtr.h"
+#include <SDL2/SDL.h>
+
 
 const int SCREEN_WIDTH = 64;
 const int SCREEN_HEIGHT = 32;
@@ -14,13 +16,14 @@ const int SCREEN_HEIGHT = 32;
 class Screen {
 public:
 
-    Screen() = default;
-    ~Screen() = default;
+    Screen() ;
+    ~Screen();
     void setPixel(uint8_t, uint8_t,uint8_t, uint8_t*);
     void clear();
     void print();
 private:
     uint8_t video[SCREEN_WIDTH * SCREEN_HEIGHT]{};
+    SDL_Window *window = NULL;
 };
 
 #endif // SERENITYOS_SCREEN_H
