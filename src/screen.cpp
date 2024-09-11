@@ -43,18 +43,28 @@ Screen::Screen()
         //TODO error handling
         //return 1;
     }
-    window = SDL_CreateWindow("SDL Example", /* Title of the SDL window */
-        SDL_WINDOWPOS_UNDEFINED, /* Position x of the window */
-        SDL_WINDOWPOS_UNDEFINED, /* Position y of the window */
-        200, /* Width of the window in pixels */
-        200, /* Height of the window in pixels */
-        0); /* Additional flag(s) */
+    window = SDL_CreateWindow("SDL Example",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,
+        SCREEN_WIDTH * SCREEN_MULTIPLIER, SCREEN_HEIGHT * SCREEN_MULTIPLIER,0);
 
     if (window == NULL) {
         fprintf(stderr, "SDL window failed to initialise: %s\n", SDL_GetError());
         //TODO error handling
         //return 1;
     }
+
+    screen_small = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT,32,0,0,0,0);
+    screen_big = SDL_CreateRGBSurface(0, SCREEN_WIDTH * SCREEN_MULTIPLIER, SCREEN_HEIGHT * SCREEN_MULTIPLIER,32,0,0,0,0);
+
+    renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_TARGETTEXTURE );
+    if( renderer == NULL )
+    {
+        fprintf( stderr, "Renderer could not be created! SDL Error: %s\n", SDL_GetError() );
+        //TODO error handling
+        //return 1;
+    }
+
+    texture =  SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH * SCREEN_MULTIPLIER, SCREEN_HEIGHT * SCREEN_MULTIPLIER);
+
 }
 
 Screen::~Screen()
@@ -62,5 +72,33 @@ Screen::~Screen()
     if(window){
         SDL_DestroyWindow(window);
     }
+
+    if(renderer){
+        SDL_DestroyRenderer(renderer);
+    }
+
+    if(texture){
+        SDL_DestroyTexture(texture);
+    }
+
     SDL_Quit();
+}
+
+//yeeted from jborza.com/post/2020-12-07-chip-8/
+void Screen::sdl_render()
+{
+    SDL_LockSurface(screen_small);
+    uint32_t *pixels = (uint32_t *)screen_small->pixels;
+    for (int i = 0; i < SCREEN_WIDTH*SCREEN_HEIGHT; i++)
+    {
+        pixels[i] = video[i] == 0 ? 0 : 0xFFFFFFFF;
+    }
+    SDL_UnlockSurface(screen_small);
+
+    SDL_BlitScaled(screen_small, NULL, screen_big, NULL);
+    SDL_UpdateTexture(texture, NULL, screen_big->pixels, screen_big->pitch);
+
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    SDL_RenderPresent(renderer);
 }

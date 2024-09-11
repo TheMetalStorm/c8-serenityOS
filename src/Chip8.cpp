@@ -88,6 +88,11 @@ ErrorOr<void> Chip8::run()
         //        printf("%x\n", next_instruction);
         // instruction decode
         TRY(decode_and_execute(next_instruction));
+        //render
+        screen->sdl_render();
+        //FIXME: should we be more accurate?
+        //TODO: activate
+//        usleep(1850 * 1000); //Wait 1850 ms. From jborza.com/post/2020-12-07-chip-8/ Timing
     }
     return {};
 }
@@ -201,7 +206,6 @@ ErrorOr<void> Chip8::decode_and_execute(uint16_t instruction)
                 screen->setPixel(x + Vx, y + Vy, bit, Vf);
             }
         }
-        //            screen->print();
         break;
     default:
         if (instruction != 0)
