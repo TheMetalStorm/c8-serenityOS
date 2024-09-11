@@ -5,6 +5,35 @@
 
 unsigned int const FONTSET_SIZE = 80;
 unsigned int const VF = 15;
+bool KEYS[322];  // 322 is the number of SDLK_DOWN events
+
+enum chip8_sdl_key_translation {
+    KEYPAD_ONE = SDLK_1,
+    KEYPAD_TWO = SDLK_2,
+    KEYPAD_THREE = SDLK_3,
+    KEYPAD_C = SDLK_4,
+
+    KEYPAD_FOUR = SDLK_q,
+    KEYPAD_FIVE = SDLK_w,
+    KEYPAD_SIX = SDLK_e,
+    KEYPAD_D = SDLK_r,
+
+    KEYPAD_SEVEN = SDLK_a,
+    KEYPAD_EIGHT = SDLK_s,
+    KEYPAD_NINE = SDLK_d,
+    KEYPAD_E = SDLK_f,
+
+    KEYPAD_A = SDLK_y,
+    KEYPAD_ZERO = SDLK_x,
+    KEYPAD_B = SDLK_c,
+    KEYPAD_F = SDLK_v,
+};
+enum chip8_key {
+        ONE , TWO , THREE, LETTER_C ,
+        FOUR , FIVE , SIX , LETTER_D ,
+        SEVEN , EIGHT , NINE , LETTER_E,
+        LETTER_A, ZERO, LETTER_B, LETTER_F
+};
 
 uint8_t fontset[FONTSET_SIZE] =
     {
@@ -40,14 +69,16 @@ ErrorOr<void> Chip8::read_rom(StringView rom_path)
 ErrorOr<void> Chip8::run()
 {
     while(program_counter < 0xFFF){
+        handle_input();
+        for(int i = 0 ; i<16; i++){
+            printf("%d" ,static_cast<int>(keypad[i]));
+        }
+        outln();
         //instruction fetch
         auto next_instruction = get_next_instruction();
-        printf("%x\n", next_instruction);
+//        printf("%x\n", next_instruction);
         //instruction decode
         TRY(decode_and_execute(next_instruction));
-
-
-        (void)getchar();
     }
     return {};
 }
@@ -59,12 +90,30 @@ uint16_t Chip8::get_next_instruction(){
 
 Chip8::Chip8()
 {
+    SDL_Window *window = NULL;
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        fprintf(stderr, "SDL failed to initialise: %s\n", SDL_GetError());
+//        return 1;
+    }
+    window = SDL_CreateWindow("SDL Example", /* Title of the SDL window */
+			    SDL_WINDOWPOS_UNDEFINED, /* Position x of the window */
+			    SDL_WINDOWPOS_UNDEFINED, /* Position y of the window */
+			    200, /* Width of the window in pixels */
+			    200, /* Height of the window in pixels */
+        0); /* Additional flag(s) */
+
+    if (window == NULL) {
+        fprintf(stderr, "SDL window failed to initialise: %s\n", SDL_GetError());
+//        return 1;
+    }
     program_counter = rom_start;
 
     for (uint32_t i = 0; i < FONTSET_SIZE; ++i){
         memory[font_start+i] = fontset[i];
     }
-
+    for(int i = 0; i < 322; i++) { // init them all to false
+        KEYS[i] = false;
+    }
 
 
 }
@@ -154,13 +203,14 @@ ErrorOr<void> Chip8::decode_and_execute(uint16_t instruction){
                     screen.setPixel(x + Vx ,y + Vy , bit, Vf);
                 }
             }
-            screen.print();
+//            screen.print();
             break;
         default:
             if(instruction != 0)
                 printf("UNKNOWN\n");
 
     }
+
     return {};
 }
 
@@ -241,4 +291,41 @@ void Chip8::handle_8xxx(uint16_t instruction)
         default:
                 outln("UNSUPPORTED INSTRUCTION OR OTHER DATA IN ROM: {}", instruction);
     }
+}
+void Chip8::handle_input()
+{
+    SDL_Event event;
+    while (SDL_PollEvent(&event) != 0) {
+                switch (event.type) {
+                    case SDL_KEYDOWN:
+                            KEYS[event.key.keysym.sym] = true;
+                            break;
+                    case SDL_KEYUP:
+                            KEYS[event.key.keysym.sym] = false;
+                            break;
+                default:
+                        break;
+                }
+    }
+
+    keypad[chip8_key::ONE] = KEYS[chip8_sdl_key_translation::KEYPAD_ONE];
+    keypad[chip8_key::TWO] = KEYS[chip8_sdl_key_translation::KEYPAD_TWO];
+    keypad[chip8_key::THREE] = KEYS[chip8_sdl_key_translation::KEYPAD_THREE];
+    keypad[chip8_key::LETTER_C] = KEYS[chip8_sdl_key_translation::KEYPAD_C];
+
+    keypad[chip8_key::FOUR] = KEYS[chip8_sdl_key_translation::KEYPAD_FOUR];
+    keypad[chip8_key::FIVE] = KEYS[chip8_sdl_key_translation::KEYPAD_FIVE];
+    keypad[chip8_key::SIX] = KEYS[chip8_sdl_key_translation::KEYPAD_SIX];
+    keypad[chip8_key::LETTER_D] = KEYS[chip8_sdl_key_translation::KEYPAD_D];
+
+    keypad[chip8_key::SEVEN] = KEYS[chip8_sdl_key_translation::KEYPAD_SEVEN];
+    keypad[chip8_key::EIGHT] = KEYS[chip8_sdl_key_translation::KEYPAD_EIGHT];
+    keypad[chip8_key::NINE] = KEYS[chip8_sdl_key_translation::KEYPAD_NINE];
+    keypad[chip8_key::LETTER_E] = KEYS[chip8_sdl_key_translation::KEYPAD_E];
+
+    keypad[chip8_key::LETTER_A] = KEYS[chip8_sdl_key_translation::KEYPAD_A];
+    keypad[chip8_key::ZERO] = KEYS[chip8_sdl_key_translation::KEYPAD_ZERO];
+    keypad[chip8_key::LETTER_B] = KEYS[chip8_sdl_key_translation::KEYPAD_B];
+    keypad[chip8_key::LETTER_F] = KEYS[chip8_sdl_key_translation::KEYPAD_F];
+
 }

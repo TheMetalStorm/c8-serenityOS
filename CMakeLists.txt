@@ -9,4 +9,6 @@ set(SOURCES
 )
 
 serenity_app(c8 ICON app-calculator)
-target_link_libraries(c8 PRIVATE LibCore LibMain)
+find_package(SDL2 QUIET)
+target_include_directories(c8 PRIVATE ${SDL2_INCLUDE_DIRS})
+target_link_libraries(c8 PRIVATE LibMain LibCore LibGfx LibMedia SDL2::SDL2)

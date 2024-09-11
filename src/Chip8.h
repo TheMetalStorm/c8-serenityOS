@@ -12,7 +12,7 @@
 #include "LibCore/File.h"
 #include <stdio.h>
 #include <AK/RefPtr.h>
-
+#include <SDL2/SDL.h>
 
 
 
@@ -26,11 +26,10 @@ public:
     uint8_t registers[16] = {};
     uint16_t index_register{};
     uint16_t program_counter{};
-//    uint8_t stack_pointer{};
     uint8_t delay_timer{};
     uint8_t sound_timer{};
     Stack stack = Stack(16);
-    uint8_t keypad[16]{};
+    bool keypad[16]{};
     Screen screen = {};
     uint16_t opcode{};
 
@@ -58,6 +57,7 @@ public:
             instruction);
     void handle_8xxx(uint16_t instruction);
     uint16_t get_bit(uint16_t , uint8_t );
+    void handle_input();
 };
 
 #endif // SERENITY_CHIP8_H
