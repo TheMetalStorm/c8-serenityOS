@@ -484,7 +484,10 @@ void Chip8::handle_Fxxx(uint16_t instruction)
     case 0xFD55:
     case 0xFE55:
     case 0xFF55:
-        TODO();
+        Vx = get_Vx(instruction);
+        for(int i = 0; i <= Vx; i++){
+            memory[index_register+i] = registers[Vx];
+        }
         break;
 
     case 0xF065: //Fx65 - LD Vx, [I] - Read registers V0 through Vx from memory starting at location I.
@@ -503,7 +506,10 @@ void Chip8::handle_Fxxx(uint16_t instruction)
     case 0xFD65:
     case 0xFE65:
     case 0xFF65:
-        TODO();
+        Vx = get_Vx(instruction);
+        for(int i = 0; i <= Vx; i++){
+            registers[Vx] = memory[index_register+i];
+        }
         break;
     }
 
