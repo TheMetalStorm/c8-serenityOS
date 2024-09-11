@@ -240,7 +240,7 @@ void Chip8::handle_8xxx(uint16_t instruction)
     uint16_t const n = get_n(instruction);
     uint16_t const Vx = get_Vx(instruction);
     uint16_t const Vy = get_Vy(instruction);
-    uint16_t result = 0;
+    uint16_t result;
     switch (n) {
     case 0x0: // 8xy0 - LD Vx, VySet Vx = Vy.
         registers[Vx] = registers[Vy];

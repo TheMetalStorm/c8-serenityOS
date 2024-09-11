@@ -45,18 +45,18 @@ public:
     // x - A 4-bit value, the lower 4 bits of the high byte of the instruction
     // y - A 4-bit value, the upper 4 bits of the low byte of the instruction
     // kk or byte - An 8-bit value, the lowest 8 bits of the instruction
-    uint16_t get_kk(uint16_t
+    static uint16_t get_kk(uint16_t
             instruction);
-    uint16_t get_Vy(uint16_t
+    static uint16_t get_Vy(uint16_t
             instruction);
-    uint16_t get_Vx(uint16_t
+    static uint16_t get_Vx(uint16_t
             instruction);
-    uint16_t get_nnn(uint16_t
+    static uint16_t get_nnn(uint16_t
             instruction);
-    uint16_t get_n(uint16_t
+    static uint16_t get_n(uint16_t
             instruction);
     void handle_8xxx(uint16_t instruction);
-    uint16_t get_bit(uint16_t , uint8_t );
+    static uint16_t get_bit(uint16_t , uint8_t );
     void handle_input();
 };
 
