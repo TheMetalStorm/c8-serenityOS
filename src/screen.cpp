@@ -10,8 +10,6 @@ void Screen::setPixel(uint8_t x, uint8_t y, uint8_t bit, uint8_t* Vf){
         //collision
         *Vf = 1;
     }
-
-
 }
 
 void Screen::print(){

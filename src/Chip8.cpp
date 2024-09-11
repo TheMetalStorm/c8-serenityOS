@@ -4,6 +4,7 @@
 #include "Chip8.h"
 
 unsigned int const FONTSET_SIZE = 80;
+unsigned int const VF = 15;
 
 uint8_t fontset[FONTSET_SIZE] =
     {
@@ -68,7 +69,7 @@ Chip8::Chip8()
 
 }
 ErrorOr<void> Chip8::decode_and_execute(uint16_t instruction){
-    uint16_t kk, Vx, Vy, nnn, n;
+    uint16_t kk, Vx, Vy, nnn, n, random_number;
 
     switch (instruction) {
         case 0x00E0: //CLS
@@ -113,25 +114,36 @@ ErrorOr<void> Chip8::decode_and_execute(uint16_t instruction){
         case 0x7000 ... 0x7FFF: //7xkk - ADD Vx, byteSet Vx = Vx + kk.
             Vx = get_Vx(instruction);
             kk = get_kk(instruction);
-            printf("kk = %d\n", kk);
             registers[Vx] += kk;
-            printf("v0 = %d\n", registers[Vx]);
-
             break;
         case 0x8000 ... 0x8FFF:
             handle_8xxx(instruction);
+            break;
+        case 0x9000 ... 0x9FFF: //SNE Vx, Vy Skip next instruction if Vx != Vy.
+            Vx = registers[get_Vx(instruction)];
+            Vy = registers[get_Vy(instruction)];
+            if(Vx != Vy){
+                program_counter += 2;
+            }
             break;
         case 0xA000 ... 0xAFFF: //Annn - LD I, addr Set I = nnn.
             nnn = get_nnn(instruction);
             index_register = nnn;
             break;
+        case 0xB000 ... 0xBFFF: //JP V0, addr Jump to location nnn + V0.
+            nnn = get_nnn(instruction);
+            program_counter = nnn + registers[0];
+            break;
+        case 0xC000 ... 0xCFFF: //Cxkk - RND Vx, byte - Set Vx = random byte AND kk.
+            Vx = get_Vx(instruction);
+            kk = get_kk(instruction);
+            random_number = get_random_uniform(255);
+            registers[Vx] = random_number & kk;
+            break;
         case 0xD000 ... 0xDFFF: //Dxyn - DRW Vx, Vy, nibble Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
             Vx = registers[get_Vx(instruction)];
             Vy = registers[get_Vy(instruction)];
-
             n = get_n(instruction);
-
-
             registers[0xF] = 0;
 
             for(int y = 0; y< n; y++){
@@ -174,14 +186,58 @@ uint16_t Chip8::get_n(uint16_t instruction) {
 void Chip8::handle_8xxx(uint16_t instruction)
 {
     uint16_t const n = get_n(instruction);
-    uint16_t  const Vx = get_Vx(instruction);
+    uint16_t const Vx = get_Vx(instruction);
     uint16_t const  Vy= get_Vy(instruction);
-
-    switch (n) {
+    uint16_t result = 0;
+        switch (n) {
         case 0x0: //8xy0 - LD Vx, VySet Vx = Vy.
                 registers[Vx] = registers[Vy];
                 break;
-
+        case 0x1: //8xy1 - OR Vx, Vy Set Vx = Vx OR Vy.
+                registers[Vx] = registers[Vx] | registers[Vy];
+                break;
+        case 0x2: //8xy2 - And Vx, Vy Set Vx = Vx AND Vy.
+                registers[Vx] = registers[Vx] & registers[Vy];
+                break;
+        case 0x3: //8xy3 - Xor Vx, Vy Set Vx = Vx Xor Vy.
+                registers[Vx] = registers[Vx] xor registers[Vy];
+                break;
+        case 0x4: //8xy4 - Set Vx = Vx + Vy, set VF = carry.
+                result = (uint16_t)registers[Vx] + (uint16_t)registers[Vy];
+                if(((result & 0xFF00) >> 8) > 0){
+                    registers[VF] = 1;
+                }
+                else{
+                    registers[VF] = 0;
+                }
+                registers[Vx] = (result & 0x00FF);
+                break;
+        case 0x5: //SUB Vx, Vy Set Vx = Vx - Vy, set VF = NOT borrow.
+                if(registers[Vx] > registers[Vy]) {
+                        registers[VF] = 1;
+                }
+                else{
+                        registers[VF] = 0;
+                }
+                registers[Vx] -= registers[Vy];
+                break;
+        case 0x6: //8xy6 - SHR Vx {, Vy}  VF = LSB Vx. Set Vx = Vx SHR 1.
+                registers[VF] = (registers[Vx] & 1);
+                registers[Vx] = registers[Vx] >> 1;
+                break;
+        case 0x7: //8xy7 - SUBN Vx, Vy Set Vx = Vy - Vx, set VF = NOT borrow.
+                if(registers[Vy] > registers[Vx]) {
+                        registers[VF] = 1;
+                }
+                else{
+                        registers[VF] = 0;
+                }
+                registers[Vx] = registers[Vy] - registers[Vx];
+                break;
+        case 0xE: //8xyE - SHL Vx {, Vy} VF = MSB Vx.  Set Vx = Vx SHL 1.
+                registers[VF] = (registers[Vx] & 0b10000000)>>7;
+                registers[Vx] = registers[Vx] << 1;
+                break;
         default:
                 outln("UNSUPPORTED INSTRUCTION OR OTHER DATA IN ROM: {}", instruction);
     }
