@@ -60,6 +60,10 @@ private:
     void handle_8xxx(uint16_t instruction);
     static uint16_t get_bit(uint16_t , uint8_t );
     void handle_input();
+    void handle_Exxx(uint16_t
+            instruction);
+    void handle_Fxxx(uint16_t
+            instruction);
 };
 
 #endif // SERENITY_CHIP8_H

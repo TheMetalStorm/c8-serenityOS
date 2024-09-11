@@ -88,11 +88,11 @@ ErrorOr<void> Chip8::run()
         //        printf("%x\n", next_instruction);
         // instruction decode
         TRY(decode_and_execute(next_instruction));
-        //render
+        // render
         screen->sdl_render();
-        //FIXME: should we be more accurate?
-        //TODO: activate
-//        usleep(1850 * 1000); //Wait 1850 ms. From jborza.com/post/2020-12-07-chip-8/ Timing
+        // FIXME: should we be more accurate?
+        // TODO: activate
+        //        usleep(1850 * 1000); //Wait 1850 ms. From jborza.com/post/2020-12-07-chip-8/ Timing
     }
     return {};
 }
@@ -208,6 +208,12 @@ ErrorOr<void> Chip8::decode_and_execute(uint16_t instruction)
             }
         }
         break;
+    case 0xE000 ... 0xEFFF:
+        handle_Exxx(instruction);
+        break;
+    case 0xF000 ... 0xFFFF:
+        handle_Fxxx(instruction);
+        break;
     default:
         if (instruction != 0)
             printf("UNKNOWN\n");
@@ -216,30 +222,6 @@ ErrorOr<void> Chip8::decode_and_execute(uint16_t instruction)
     return {};
 }
 
-uint16_t Chip8::get_bit(uint16_t byte, uint8_t bit)
-{
-    return (byte >> bit) & 1;
-}
-uint16_t Chip8::get_kk(uint16_t instruction)
-{
-    return (instruction & 0x00FF);
-}
-uint16_t Chip8::get_Vx(uint16_t instruction)
-{
-    return (instruction & 0x0F00) >> 8;
-}
-uint16_t Chip8::get_Vy(uint16_t instruction)
-{
-    return (instruction & 0x00F0) >> 4;
-}
-uint16_t Chip8::get_nnn(uint16_t instruction)
-{
-    return instruction & 0xFFF;
-}
-uint16_t Chip8::get_n(uint16_t instruction)
-{
-    return instruction & 0x000F;
-}
 void Chip8::handle_8xxx(uint16_t instruction)
 {
     uint16_t const n = get_n(instruction);
@@ -296,12 +278,246 @@ void Chip8::handle_8xxx(uint16_t instruction)
         outln("UNSUPPORTED INSTRUCTION OR OTHER DATA IN ROM: {}", instruction);
     }
 }
+
+void Chip8::handle_Exxx(uint16_t instruction)
+{
+    uint16_t Vx;
+    switch (instruction) {
+    case 0xE09E:
+    case 0xE19E:
+    case 0xE29E:
+    case 0xE39E:
+    case 0xE49E:
+    case 0xE59E:
+    case 0xE69E:
+    case 0xE79E:
+    case 0xE89E:
+    case 0xE99E:
+    case 0xEA9E:
+    case 0xEB9E:
+    case 0xEC9E:
+    case 0xED9E:
+    case 0xEE9E:
+    case 0xEF9E: // Ex9E - SKP Vx - Skip next instruction if key with the value of Vx is pressed.
+        Vx = registers[get_Vx(instruction)];
+        if (keypad[Vx]) {
+            program_counter += 2;
+        }
+        break;
+    case 0xE0A1: // ExA1 - SKNP  Vx - Skip next instruction if key with the value of Vx is not pressed.
+    case 0xE1A1:
+    case 0xE2A1:
+    case 0xE3A1:
+    case 0xE4A1:
+    case 0xE5A1:
+    case 0xE6A1:
+    case 0xE7A1:
+    case 0xE8A1:
+    case 0xE9A1:
+    case 0xEAA1:
+    case 0xEBA1:
+    case 0xECA1:
+    case 0xEDA1:
+    case 0xEEA1:
+    case 0xEFA1:
+        Vx = registers[get_Vx(instruction)];
+        if (!keypad[Vx]) {
+            program_counter += 2;
+        }
+        break;
+    default:
+        outln("UNSUPPORTED INSTRUCTION OR OTHER DATA IN ROM: {}", instruction);
+    }
+}
+
+void Chip8::handle_Fxxx(uint16_t instruction)
+{
+    uint16_t Vx;
+    switch (instruction) {
+    case 0xF007: // LD Vx, DT - Set Vx = delay timer value.
+    case 0xF107:
+    case 0xF207:
+    case 0xF307:
+    case 0xF407:
+    case 0xF507:
+    case 0xF607:
+    case 0xF707:
+    case 0xF807:
+    case 0xF907:
+    case 0xFA07:
+    case 0xFB07:
+    case 0xFC07:
+    case 0xFD07:
+    case 0xFE07:
+    case 0xFF07:
+        Vx = get_Vx(instruction);
+        registers[Vx] = delay_timer;
+        break;
+    case 0xF00A: // Fx0A - LD Vx, K - Wait for a key press, store the value of the key in Vx.
+    case 0xF10A:
+    case 0xF20A:
+    case 0xF30A:
+    case 0xF40A:
+    case 0xF50A:
+    case 0xF60A:
+    case 0xF70A:
+    case 0xF80A:
+    case 0xF90A:
+    case 0xFA0A:
+    case 0xFB0A:
+    case 0xFC0A:
+    case 0xFD0A:
+    case 0xFE0A:
+    case 0xFF0A:
+        TODO();
+        break;
+    case 0xF015: // Fx15 - LD DT, Vx Set delay timer = Vx.
+    case 0xF115:
+    case 0xF215:
+    case 0xF315:
+    case 0xF415:
+    case 0xF515:
+    case 0xF615:
+    case 0xF715:
+    case 0xF815:
+    case 0xF915:
+    case 0xFA15:
+    case 0xFB15:
+    case 0xFC15:
+    case 0xFD15:
+    case 0xFE15:
+    case 0xFF15:
+        Vx = get_Vx(instruction);
+        delay_timer = registers[Vx];
+        break;
+    case 0xF018: //Fx18 - LD ST, Vx - Set sound timer = Vx.
+    case 0xF118:
+    case 0xF218:
+    case 0xF318:
+    case 0xF418:
+    case 0xF518:
+    case 0xF618:
+    case 0xF718:
+    case 0xF818:
+    case 0xF918:
+    case 0xFA18:
+    case 0xFB18:
+    case 0xFC18:
+    case 0xFD18:
+    case 0xFE18:
+    case 0xFF18:
+        Vx = get_Vx(instruction);
+        sound_timer = registers[Vx];
+        break;
+    case 0xF01E: //Fx1E - ADD I, Vx - Set I = I + Vx.
+    case 0xF11E:
+    case 0xF21E:
+    case 0xF31E:
+    case 0xF41E:
+    case 0xF51E:
+    case 0xF61E:
+    case 0xF71E:
+    case 0xF81E:
+    case 0xF91E:
+    case 0xFA1E:
+    case 0xFB1E:
+    case 0xFC1E:
+    case 0xFD1E:
+    case 0xFE1E:
+    case 0xFF1E:
+        index_register += registers[get_Vx(instruction)];
+        break;
+
+    case 0xF029: //Fx29 - LD F, Vx - Set I = location of sprite for digit Vx.
+    case 0xF129:
+    case 0xF229:
+    case 0xF329:
+    case 0xF429:
+    case 0xF529:
+    case 0xF629:
+    case 0xF729:
+    case 0xF829:
+    case 0xF929:
+    case 0xFA29:
+    case 0xFB29:
+    case 0xFC29:
+    case 0xFD29:
+    case 0xFE29:
+    case 0xFF29:
+        Vx = get_Vx(instruction);
+        //FIXME: if problems with rendering, check if 5 is right value here
+        index_register = font_start + (Vx * 5);
+        break;
+
+    case 0xF033: //Fx33 - LD B, Vx - Store BCD representation of Vx in memory locations I, I+1, and I+2.
+    case 0xF133:
+    case 0xF233:
+    case 0xF333:
+    case 0xF433:
+    case 0xF533:
+    case 0xF633:
+    case 0xF733:
+    case 0xF833:
+    case 0xF933:
+    case 0xFA33:
+    case 0xFB33:
+    case 0xFC33:
+    case 0xFD33:
+    case 0xFE33:
+    case 0xFF33:
+        TODO();
+        break;
+
+    case 0xF055: //Fx55 - LD [I], Vx - Store registers V0 through Vx in memory starting at location I.
+    case 0xF155:
+    case 0xF255:
+    case 0xF355:
+    case 0xF455:
+    case 0xF555:
+    case 0xF655:
+    case 0xF755:
+    case 0xF855:
+    case 0xF955:
+    case 0xFA55:
+    case 0xFB55:
+    case 0xFC55:
+    case 0xFD55:
+    case 0xFE55:
+    case 0xFF55:
+        TODO();
+        break;
+
+    case 0xF065: //Fx65 - LD Vx, [I] - Read registers V0 through Vx from memory starting at location I.
+    case 0xF165:
+    case 0xF265:
+    case 0xF365:
+    case 0xF465:
+    case 0xF565:
+    case 0xF665:
+    case 0xF765:
+    case 0xF865:
+    case 0xF965:
+    case 0xFA65:
+    case 0xFB65:
+    case 0xFC65:
+    case 0xFD65:
+    case 0xFE65:
+    case 0xFF65:
+        TODO();
+        break;
+    }
+
+
+
+
+
+}
 void Chip8::handle_input()
 {
-    //TODO: consider this (consider this!) (its a reference to "losing my religion")
-    //https://retrocomputing.stackexchange.com/questions/358/how-are-held-down-keys-handled-in-chip-8
+    // TODO: consider this (consider this!) (its a reference to "losing my religion")
+    // https://retrocomputing.stackexchange.com/questions/358/how-are-held-down-keys-handled-in-chip-8
 
-    //FIXME: crash when i press CTRL while SDL window is in focus
+    // FIXME: crash when i press CTRL while SDL window is in focus
     SDL_Event event;
     while (SDL_PollEvent(&event) != 0) {
         switch (event.type) {
@@ -342,4 +558,29 @@ void Chip8::handle_input()
     keypad[chip8_key::ZERO] = KEYS[chip8_sdl_key_translation::KEYPAD_ZERO];
     keypad[chip8_key::LETTER_B] = KEYS[chip8_sdl_key_translation::KEYPAD_B];
     keypad[chip8_key::LETTER_F] = KEYS[chip8_sdl_key_translation::KEYPAD_F];
+}
+
+uint16_t Chip8::get_bit(uint16_t byte, uint8_t bit)
+{
+    return (byte >> bit) & 1;
+}
+uint16_t Chip8::get_kk(uint16_t instruction)
+{
+    return (instruction & 0x00FF);
+}
+uint16_t Chip8::get_Vx(uint16_t instruction)
+{
+    return (instruction & 0x0F00) >> 8;
+}
+uint16_t Chip8::get_Vy(uint16_t instruction)
+{
+    return (instruction & 0x00F0) >> 4;
+}
+uint16_t Chip8::get_nnn(uint16_t instruction)
+{
+    return instruction & 0xFFF;
+}
+uint16_t Chip8::get_n(uint16_t instruction)
+{
+    return instruction & 0x000F;
 }
