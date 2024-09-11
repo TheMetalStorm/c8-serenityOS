@@ -103,8 +103,9 @@ uint16_t Chip8::get_next_instruction()
     return instruction | memory[program_counter++];
 }
 
-Chip8::Chip8()
+Chip8::Chip8(int screen_size_factor)
 {
+    screen = make<Screen>(screen_size_factor);
     program_counter = rom_start;
 
     for (uint32_t i = 0; i < FONTSET_SIZE; ++i) {

@@ -18,7 +18,7 @@
 
 class Chip8{
 public:
-    Chip8();
+    Chip8(int screen_size_factor);
     const uint16_t font_start = 0x050;
     const uint16_t rom_start = 0x200;
     const uint16_t rom_end = 0xFFF;
@@ -31,7 +31,7 @@ public:
     Stack stack = Stack(16);
     bool keypad[16]{};
     bool is_running = true;
-    NonnullOwnPtr<Screen> screen = make<Screen>();
+    OwnPtr<Screen> screen;
     uint16_t opcode{};
 
     ErrorOr<void> read_rom(StringView);
@@ -45,6 +45,8 @@ public:
     // x - A 4-bit value, the lower 4 bits of the high byte of the instruction
     // y - A 4-bit value, the upper 4 bits of the low byte of the instruction
     // kk or byte - An 8-bit value, the lowest 8 bits of the instruction
+private:
+    int screen_size_multiplier;
     static uint16_t get_kk(uint16_t
             instruction);
     static uint16_t get_Vy(uint16_t

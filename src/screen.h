@@ -15,8 +15,7 @@ const int SCREEN_HEIGHT = 32;
 
 class Screen {
 public:
-    const int SCREEN_MULTIPLIER = 12;
-    Screen() ;
+    Screen(int screen_size_factor);
     ~Screen();
     void setPixel(uint8_t, uint8_t,uint8_t, uint8_t*);
     void clear();

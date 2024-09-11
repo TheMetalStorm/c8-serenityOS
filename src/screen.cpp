@@ -32,7 +32,7 @@ void Screen::clear()
 //        {
 //            return adopt_nonnull_own_or_enomem(new (nothrow) UHCIRootHub(move(uhci_controller)));
 //        }
-Screen::Screen()
+Screen::Screen(int screen_size_factor)
 {
     SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -44,7 +44,7 @@ Screen::Screen()
         //return 1;
     }
     window = SDL_CreateWindow("SDL Example",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,
-        SCREEN_WIDTH * SCREEN_MULTIPLIER, SCREEN_HEIGHT * SCREEN_MULTIPLIER,0);
+        SCREEN_WIDTH * screen_size_factor, SCREEN_HEIGHT * screen_size_factor,0);
 
     if (window == NULL) {
         fprintf(stderr, "SDL window failed to initialise: %s\n", SDL_GetError());
@@ -53,7 +53,7 @@ Screen::Screen()
     }
 
     screen_small = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT,32,0,0,0,0);
-    screen_big = SDL_CreateRGBSurface(0, SCREEN_WIDTH * SCREEN_MULTIPLIER, SCREEN_HEIGHT * SCREEN_MULTIPLIER,32,0,0,0,0);
+    screen_big = SDL_CreateRGBSurface(0, SCREEN_WIDTH * screen_size_factor, SCREEN_HEIGHT * screen_size_factor,32,0,0,0,0);
 
     renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_TARGETTEXTURE );
     if( renderer == NULL )
@@ -63,7 +63,7 @@ Screen::Screen()
         //return 1;
     }
 
-    texture =  SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH * SCREEN_MULTIPLIER, SCREEN_HEIGHT * SCREEN_MULTIPLIER);
+    texture =  SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH * screen_size_factor, SCREEN_HEIGHT * screen_size_factor);
 
 }
 
