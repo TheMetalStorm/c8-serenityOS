@@ -369,7 +369,7 @@ void Chip8::handle_Fxxx(uint16_t instruction)
     case 0xFD0A:
     case 0xFE0A:
     case 0xFF0A:
-        TODO();
+//        TODO();
         break;
     case 0xF015: // Fx15 - LD DT, Vx Set delay timer = Vx.
     case 0xF115:
@@ -465,7 +465,10 @@ void Chip8::handle_Fxxx(uint16_t instruction)
     case 0xFD33:
     case 0xFE33:
     case 0xFF33:
-        TODO();
+        Vx = registers[get_Vx(instruction)];
+        memory[index_register] = (Vx/100)%10;
+        memory[index_register+1] = (Vx/10)%10;
+        memory[index_register+2] = (Vx/1)%10;
         break;
 
     case 0xF055: //Fx55 - LD [I], Vx - Store registers V0 through Vx in memory starting at location I.
