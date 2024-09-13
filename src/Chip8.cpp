@@ -82,14 +82,14 @@ ErrorOr<void> Chip8::run()
     auto current_time_micro = current_time_microseconds();
     i64 timer_overflow = 0;
     while (program_counter <= 0xFFF) {
-        i64 timer_delta = (current_time_microseconds() + timer_overflow) - current_time_micro;
-        if(timer_delta > 60){
-            if(delay_timer >0){
+        i64 timer_delta = current_time_microseconds() - current_time_micro;
+        if (timer_delta + timer_overflow > 60) {
+            if (delay_timer > 0) {
                 delay_timer -= 1;
             }
 
-            if(sound_timer > 0){
-                sound_timer -=1;
+            if (sound_timer > 0) {
+                sound_timer -= 1;
             }
             timer_overflow = timer_delta % 60;
         }
@@ -103,7 +103,7 @@ ErrorOr<void> Chip8::run()
         TRY(decode_and_execute(next_instruction));
 
         current_time_micro = current_time_microseconds();
-//        usleep(1428);
+        //        usleep(1428);
     }
     return {};
 }
@@ -133,7 +133,7 @@ Chip8::Chip8(int screen_size_factor)
 ErrorOr<void> Chip8::decode_and_execute(uint16_t instruction)
 {
     uint16_t kk, Vx, Vy, nnn, n, random_number;
-    printf("%d\n", instruction);
+    //    printf("%d\n", instruction);
     switch (instruction) {
     case 0x00E0: // CLS
         screen->clear();
@@ -339,7 +339,7 @@ void Chip8::handle_Exxx(uint16_t instruction)
 void Chip8::handle_Fxxx(uint16_t instruction)
 {
     uint16_t Vx;
-    int foundKey = -1;
+    bool keyDetected;
     switch (instruction) {
     case 0xF007: // LD Vx, DT - Set Vx = delay timer value.
     case 0xF107:
@@ -376,20 +376,37 @@ void Chip8::handle_Fxxx(uint16_t instruction)
     case 0xFD0A:
     case 0xFE0A:
     case 0xFF0A:
+        // TODO this logic is wrong
         Vx = get_Vx(instruction);
+        // did press before we release this frame? -> store in Vx
+        if (lastKeyPressed != -1) {
+            if (!keypad[lastKeyPressed]) {
+                registers[Vx] = lastKeyPressed;
+                outln("Key Released {}", lastKeyPressed);
+                lastKeyPressed = -1;
+                break;
+            }
+            outln("Key Held {}", lastKeyPressed);
+            program_counter -= 2;
+            break;
+        }
+
+        // else stop execution until key is pressed this frame
+        keyDetected = false;
+
         for (int i = 0; i < 16; i++) {
             if (keypad[i]) {
-                foundKey = i;
+                outln("Key Down {}", i);
+                program_counter -= 2;
+                lastKeyPressed = i;
+                keyDetected = true; // A key was detected
                 break;
             }
         }
 
-        if (foundKey != -1) {
-            registers[Vx] = foundKey;
-        } else {
-            program_counter -= 2;
+        if (!keyDetected) {
+            program_counter -= 2; // Stall program to wait for a key press
         }
-
         break;
     case 0xF015: // Fx15 - LD DT, Vx Set delay timer = Vx.
     case 0xF115:
