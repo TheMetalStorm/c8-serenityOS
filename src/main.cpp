@@ -6,6 +6,9 @@ int screen_size_factor = 10;
 StringView rom_path;
 ErrorOr<int> serenity_main(Main::Arguments arguments){
 
+    //TODO: Timer Timing: when to decrement
+    //TODO: CPU Timing - figure out or make input
+
     Core::ArgsParser parser;
     parser.add_option(screen_size_factor, "The Size of the Emulator Window, 64*screen-size-factor x 32*screen-size-factor. Default is 10.","screen-size-factor", 's', "screen-size-factor");
     parser.add_positional_argument(rom_path, "Path to the Rom", "rom-path");
