@@ -79,8 +79,21 @@ ErrorOr<void> Chip8::read_rom(StringView rom_path)
 
 ErrorOr<void> Chip8::run()
 {
-//    int currentTime = 0;
+    auto current_time_micro = current_time_microseconds();
+    i64 timer_overflow = 0;
     while (program_counter <= 0xFFF) {
+        i64 timer_delta = (current_time_microseconds() + timer_overflow) - current_time_micro;
+        if(timer_delta > 60){
+            if(delay_timer >0){
+                delay_timer -= 1;
+            }
+
+            if(sound_timer > 0){
+                sound_timer -=1;
+            }
+            timer_overflow = timer_delta % 60;
+        }
+
         handle_input();
         if (!is_running)
             break;
@@ -88,7 +101,9 @@ ErrorOr<void> Chip8::run()
         auto next_instruction = get_next_instruction();
         // instruction decode / render on draw instrutions
         TRY(decode_and_execute(next_instruction));
-//        usleep(1428); //700Hz (Wait 1428 microseconds).
+
+        current_time_micro = current_time_microseconds();
+//        usleep(1428);
     }
     return {};
 }

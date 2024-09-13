@@ -5,34 +5,33 @@
 #define SERENITY_CHIP8_H
 
 #include "AK/Format.h"
-#include "stack.h"
-#include "screen.h"
 #include "AK/Random.h"
+#include "AK/Time.h"
 #include "AK/Vector.h"
 #include "LibCore/File.h"
-#include <stdio.h>
+#include "screen.h"
+#include "stack.h"
 #include <AK/RefPtr.h>
+#include <stdio.h>
 #include <SDL2/SDL.h>
 
-
-
-class Chip8{
+class Chip8 {
 public:
     Chip8(int screen_size_factor);
-    const uint16_t font_start = 0x050;
-    const uint16_t rom_start = 0x200;
-    const uint16_t rom_end = 0xFFF;
-    uint8_t memory[4096]= {0};
+    uint16_t const font_start = 0x050;
+    uint16_t const rom_start = 0x200;
+    uint16_t const rom_end = 0xFFF;
+    uint8_t memory[4096] = { 0 };
     uint8_t registers[16] = {};
-    uint16_t index_register{};
-    uint16_t program_counter{};
-    uint8_t delay_timer{};
-    uint8_t sound_timer{};
+    uint16_t index_register {};
+    uint16_t program_counter {};
+    uint8_t delay_timer {};
+    uint8_t sound_timer {};
     Stack stack = Stack(16);
-    bool keypad[16]{};
+    bool keypad[16] {};
     bool is_running = true;
     OwnPtr<Screen> screen;
-    uint16_t opcode{};
+    uint16_t opcode {};
 
     ErrorOr<void> read_rom(StringView);
     ErrorOr<void> run();
@@ -58,12 +57,15 @@ private:
     static uint16_t get_n(uint16_t
             instruction);
     void handle_8xxx(uint16_t instruction);
-    static uint16_t get_bit(uint16_t , uint8_t );
+    static uint16_t get_bit(uint16_t, uint8_t);
     void handle_input();
     void handle_Exxx(uint16_t
             instruction);
     void handle_Fxxx(uint16_t
             instruction);
+    static i64 current_time_microseconds(){
+        return UnixDateTime::now().milliseconds_since_epoch() * 1000;
+    }
 };
 
 #endif // SERENITY_CHIP8_H
