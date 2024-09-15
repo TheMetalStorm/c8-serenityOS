@@ -243,15 +243,19 @@ void Chip8::handle_8xxx(uint16_t instruction)
     switch (n) {
     case 0x0: // 8xy0 - LD Vx, VySet Vx = Vy.
         registers[Vx] = registers[Vy];
+
         break;
     case 0x1: // 8xy1 - OR Vx, Vy Set Vx = Vx OR Vy.
         registers[Vx] = registers[Vx] | registers[Vy];
+        registers[VF] = 0;
         break;
     case 0x2: // 8xy2 - And Vx, Vy Set Vx = Vx AND Vy.
         registers[Vx] = registers[Vx] & registers[Vy];
+        registers[VF] = 0;
         break;
     case 0x3: // 8xy3 - Xor Vx, Vy Set Vx = Vx Xor Vy.
         registers[Vx] = registers[Vx] xor registers[Vy];
+        registers[VF] = 0;
         break;
     case 0x4: // 8xy4 - Set Vx = Vx + Vy, set VF = carry.
         result = (uint16_t)registers[Vx] + (uint16_t)registers[Vy];
