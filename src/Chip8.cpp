@@ -531,6 +531,7 @@ void Chip8::handle_Fxxx(uint16_t instruction)
         for (int i = 0; i <= Vx; i++) {
             memory[index_register + i] = registers[i];
         }
+        index_register += Vx + 1;
         break;
 
     case 0xF065: // Fx65 - LD Vx, [I] - Read registers V0 through Vx from memory starting at location I.
@@ -553,6 +554,7 @@ void Chip8::handle_Fxxx(uint16_t instruction)
         for (int i = 0; i <= Vx; i++) {
             registers[i] = memory[index_register + i];
         }
+        index_register += Vx + 1;
         break;
     }
 }
