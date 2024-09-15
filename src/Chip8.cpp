@@ -70,9 +70,8 @@ ErrorOr<void> Chip8::read_rom(StringView rom_path)
 {
     auto rom = TRY(Core::File::open(rom_path, Core::File::OpenMode::Read));
     auto rom_content = TRY(rom->read_until_eof());
-    for (size_t i = 0; i < rom_content.bytes().size(); i++) {
-        memory[rom_start + i] = rom_content.bytes()[i];
-    }
+
+    memcpy(&memory[rom_start], rom_content.bytes().data(), rom_content.bytes().size() * sizeof(uint8_t));
 
     return {};
 }
