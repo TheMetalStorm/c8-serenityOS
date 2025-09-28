@@ -69,18 +69,31 @@ Screen::Screen(int screen_size_factor)
 
 Screen::~Screen()
 {
-    if(window){
-        SDL_DestroyWindow(window);
+    // Clean up SDL resources in reverse order of creation
+    if(texture){
+        SDL_DestroyTexture(texture);
+        texture = nullptr;
     }
 
     if(renderer){
         SDL_DestroyRenderer(renderer);
+        renderer = nullptr;
     }
 
-    if(texture){
-        SDL_DestroyTexture(texture);
+    if(screen_big){
+        SDL_FreeSurface(screen_big);
+        screen_big = nullptr;
     }
 
+    if(screen_small){
+        SDL_FreeSurface(screen_small);
+        screen_small = nullptr;
+    }
+
+    if(window){
+        SDL_DestroyWindow(window);
+        window = nullptr;
+    }
     SDL_Quit();
 }
 
