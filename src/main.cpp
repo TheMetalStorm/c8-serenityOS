@@ -5,11 +5,10 @@
 
 int screen_size_factor = 10;
 StringView rom_path;
-int cpu_timing = 700; // Standard CHIP-8 timing: 700 cycles per second
+int cpu_timing = 700; 
 
 ErrorOr<int> serenity_main(Main::Arguments arguments){
 
-    //TODO: Timer Timing: when to decrement
 
     Core::ArgsParser parser;
     parser.add_option(screen_size_factor, "The Size of the Emulator Window, 64*screen-size-factor x 32*screen-size-factor. Default is 10.","screen-size-factor", 's', "screen-size-factor");
