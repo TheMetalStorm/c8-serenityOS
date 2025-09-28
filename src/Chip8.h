@@ -17,7 +17,8 @@
 
 class Chip8 {
 public:
-    Chip8(int screen_size_factor);
+    Chip8(int screen_size_factor, int cpu_timing);
+    int timing;
     uint16_t const font_start = 0x050;
     uint16_t const rom_start = 0x200;
     uint16_t const rom_end = 0xFFF;

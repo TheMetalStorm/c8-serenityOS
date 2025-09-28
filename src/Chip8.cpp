@@ -80,10 +80,23 @@ ErrorOr<void> Chip8::read_rom(StringView rom_path)
 ErrorOr<void> Chip8::run()
 {
     auto current_time_micro = current_time_microseconds();
+    auto last_cpu_time = current_time_micro;
+    auto last_timer_time = current_time_micro;
+    i64 cpu_cycle_overflow = 0;
     i64 timer_overflow = 0;
+    
+    i64 microseconds_per_cycle = 1000000 / timing; // 1 second = 1,000,000 microseconds
+    
+
+    constexpr i64 timer_period_microseconds = 16667; // ~60Hz
+    
     while (program_counter <= 0xFFF) {
-        i64 timer_delta = current_time_microseconds() - current_time_micro;
-        if (timer_delta + timer_overflow > 60) {
+        auto now = current_time_microseconds();
+        i64 timer_delta = now - last_timer_time;
+        i64 cpu_delta = now - last_cpu_time;
+        
+        // increment timers at 60Hz independent of CPU timing
+        if (timer_delta + timer_overflow >= timer_period_microseconds) {
             if (delay_timer > 0) {
                 delay_timer -= 1;
             }
@@ -91,19 +104,23 @@ ErrorOr<void> Chip8::run()
             if (sound_timer > 0) {
                 sound_timer -= 1;
             }
-            timer_overflow = timer_delta % 60;
+            timer_overflow = (timer_delta + timer_overflow) % timer_period_microseconds;
+            last_timer_time = now;
         }
 
-        handle_input();
-        if (!is_running)
-            break;
-        // instruction fetch
-        auto next_instruction = get_next_instruction();
-        // instruction decode / render on draw instrutions
-        TRY(decode_and_execute(next_instruction));
-
-        current_time_micro = current_time_microseconds();
-        //        usleep(1428);
+        if (cpu_delta + cpu_cycle_overflow >= microseconds_per_cycle) {
+            handle_input();
+            if (!is_running)
+                break;
+                
+            // instruction fetch
+            auto next_instruction = get_next_instruction();
+            // instruction decode / render on draw instructions
+            TRY(decode_and_execute(next_instruction));
+            
+            cpu_cycle_overflow = (cpu_delta + cpu_cycle_overflow) % microseconds_per_cycle;
+            last_cpu_time = now;
+        }
     }
     return {};
 }
@@ -114,8 +131,9 @@ uint16_t Chip8::get_next_instruction()
     return instruction | memory[program_counter++];
 }
 
-Chip8::Chip8(int screen_size_factor)
+Chip8::Chip8(int screen_size_factor, int cpu_timing)
 {
+    timing = cpu_timing;
     screen = make<Screen>(screen_size_factor);
     program_counter = rom_start;
 
@@ -559,7 +577,6 @@ void Chip8::handle_Fxxx(uint16_t instruction)
 }
 void Chip8::handle_input()
 {
-    // FIXME: crash when i press CTRL while SDL window is in focus
     SDL_Event event;
     while (SDL_PollEvent(&event) != 0) {
         switch (event.type) {
