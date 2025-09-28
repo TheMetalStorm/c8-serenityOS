@@ -151,7 +151,12 @@ uint16_t Chip8::get_next_instruction()
 Chip8::Chip8(int screen_size_factor, int cpu_timing)
 {
     timing = cpu_timing;
-    screen = make<Screen>(screen_size_factor);
+    auto screen_result = Screen::try_create(screen_size_factor);
+    if (screen_result.is_error()) {
+        outln("Failed to create screen: {}", screen_result.error());
+        exit(1);
+    }
+    screen = screen_result.release_value();
     program_counter = rom_start;
 
     for (uint32_t i = 0; i < FONTSET_SIZE; ++i) {

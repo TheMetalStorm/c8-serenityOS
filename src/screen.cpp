@@ -35,43 +35,51 @@ void Screen::clear()
     memset(video, 0, sizeof(video));
 }
 
-//TODO sth like this?
-//        ErrorOr<NonnullOwnPtr<UHCIRootHub>> UHCIRootHub::try_create(NonnullLockRefPtr<UHCIController> uhci_controller)
-//        {
-//            return adopt_nonnull_own_or_enomem(new (nothrow) UHCIRootHub(move(uhci_controller)));
-//        }
-Screen::Screen(int screen_size_factor)
+ErrorOr<OwnPtr<Screen>> Screen::try_create(int screen_size_factor)
+{
+    auto screen = TRY(adopt_nonnull_own_or_enomem(new (nothrow) Screen()));
+    TRY(screen->initialize(screen_size_factor));
+    return screen;
+}
+
+ErrorOr<void> Screen::initialize(int screen_size_factor)
 {
     SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
-        fprintf(stderr, "SDL failed to initialise: %s\n", SDL_GetError());
-
-
-
-        //TODO error handling
-        //return 1;
+        return Error::from_string_literal("SDL failed to initialize");
     }
-    window = SDL_CreateWindow("SDL Example",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,
+    window = SDL_CreateWindow("c8 Serenity",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,
         SCREEN_WIDTH * screen_size_factor, SCREEN_HEIGHT * screen_size_factor,0);
 
     if (window == NULL) {
-        fprintf(stderr, "SDL window failed to initialise: %s\n", SDL_GetError());
-        //TODO error handling
-        //return 1;
+        cleanup_resources();
+        return Error::from_string_literal("Failed to create SDL window");
     }
 
     screen_small = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT,32,0,0,0,0);
+    if (!screen_small) {
+        cleanup_resources();
+        return Error::from_string_literal("Failed to create small surface");
+    }
+
     screen_big = SDL_CreateRGBSurface(0, SCREEN_WIDTH * screen_size_factor, SCREEN_HEIGHT * screen_size_factor,32,0,0,0,0);
+    if (!screen_big) {
+        cleanup_resources();
+        return Error::from_string_literal("Failed to create big surface");
+    }
 
     renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_TARGETTEXTURE );
     if( renderer == NULL )
     {
-        fprintf( stderr, "Renderer could not be created! SDL Error: %s\n", SDL_GetError() );
-        //TODO error handling
-        //return 1;
+        cleanup_resources();
+        return Error::from_string_literal("Failed to create SDL renderer");
     }
 
     texture =  SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH * screen_size_factor, SCREEN_HEIGHT * screen_size_factor);
+    if (!texture) {
+        cleanup_resources();
+        return Error::from_string_literal("Failed to create SDL texture");
+    }
 
     // Initialize SDL Audio for beep sound with minimal latency
     SDL_AudioSpec want, have;
@@ -91,9 +99,11 @@ Screen::Screen(int screen_size_factor)
         // Start audio device immediately but with silence
         SDL_PauseAudioDevice(audio_device, 0);
     }
+    
+    return {};
 }
 
-Screen::~Screen()
+void Screen::cleanup_resources()
 {
     // Clean up audio resources first
     if(audio_device != 0){
@@ -126,6 +136,11 @@ Screen::~Screen()
         SDL_DestroyWindow(window);
         window = nullptr;
     }
+}
+
+Screen::~Screen()
+{
+    cleanup_resources();
     SDL_Quit();
 }
 
@@ -162,17 +177,15 @@ void Screen::audio_callback(void* userdata, Uint8* stream, int len)
     
     if (screen->is_beeping) {
         for (int i = 0; i < samples; i++) {
-            // Generate square wave
             fstream[i] = (phase < 0.5f) ? amplitude : -amplitude;
             phase += frequency / sample_rate;
             if (phase >= 1.0f) phase -= 1.0f;
         }
     } else {
-        // Silence
         for (int i = 0; i < samples; i++) {
             fstream[i] = 0.0f;
         }
-        phase = 0.0f; // Reset phase when not beeping
+        phase = 0.0f; 
     }
 }
 
@@ -180,7 +193,6 @@ void Screen::start_beep()
 {
     if (audio_device != 0 && !is_beeping) {
         is_beeping = true;
-        // Audio device is already running, just change the flag
     }
 }
 
@@ -188,6 +200,5 @@ void Screen::stop_beep()
 {
     if (audio_device != 0 && is_beeping) {
         is_beeping = false;
-        // Audio device keeps running but outputs silence
     }
 }

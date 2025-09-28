@@ -7,6 +7,7 @@
 
 #include "AK/Types.h"
 #include "AK/OwnPtr.h"
+#include "AK/Error.h"
 #include <SDL2/SDL.h>
 
 
@@ -15,7 +16,7 @@ const int SCREEN_HEIGHT = 32;
 
 class Screen {
 public:
-    Screen(int screen_size_factor);
+    static ErrorOr<OwnPtr<Screen>> try_create(int screen_size_factor);
     ~Screen();
     void setPixel(uint8_t, uint8_t,uint8_t, uint8_t*);
     void clear();
@@ -25,6 +26,9 @@ public:
     void stop_beep();
 
 private:
+    Screen() = default;
+    ErrorOr<void> initialize(int screen_size_factor);
+    void cleanup_resources();
     uint32_t video[SCREEN_WIDTH * SCREEN_HEIGHT]{};
     SDL_Window *window = NULL;
     SDL_Surface *screen_small = NULL;
