@@ -21,6 +21,8 @@ public:
     void clear();
     void print();
     void sdl_render();
+    void start_beep();
+    void stop_beep();
 
 private:
     uint32_t video[SCREEN_WIDTH * SCREEN_HEIGHT]{};
@@ -29,6 +31,11 @@ private:
     SDL_Surface *screen_big = NULL;
     SDL_Renderer *renderer = NULL;
     SDL_Texture *texture = NULL;
+    
+    // Audio members
+    SDL_AudioDeviceID audio_device = 0;
+    bool is_beeping = false;
+    static void audio_callback(void* userdata, Uint8* stream, int len);
 };
 
 #endif // SERENITYOS_SCREEN_H

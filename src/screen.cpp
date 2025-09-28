@@ -4,8 +4,16 @@
 
 #include "screen.h"
 void Screen::setPixel(uint8_t x, uint8_t y, uint8_t bit, uint8_t* Vf){
-    auto before = video[y * SCREEN_WIDTH + (x%SCREEN_WIDTH)];
-    video[y * SCREEN_WIDTH + (x%SCREEN_WIDTH)] = video[y * SCREEN_WIDTH + (x%SCREEN_WIDTH)] xor bit;
+    // Clip Y coordinate to screen bounds (CHIP-8 sprites should clip, not wrap)
+    if (y >= SCREEN_HEIGHT) {
+        return; // Don't draw pixels outside screen bounds
+    }
+    
+    // Wrap X coordinate as before
+    x = x % SCREEN_WIDTH;
+    
+    auto before = video[y * SCREEN_WIDTH + x];
+    video[y * SCREEN_WIDTH + x] = video[y * SCREEN_WIDTH + x] xor bit;
     if(before == 1 and bit == 1){
         //collision
         *Vf = 1;
@@ -35,7 +43,7 @@ void Screen::clear()
 Screen::Screen(int screen_size_factor)
 {
     SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
         fprintf(stderr, "SDL failed to initialise: %s\n", SDL_GetError());
 
 
@@ -65,10 +73,34 @@ Screen::Screen(int screen_size_factor)
 
     texture =  SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH * screen_size_factor, SCREEN_HEIGHT * screen_size_factor);
 
+    // Initialize SDL Audio for beep sound with minimal latency
+    SDL_AudioSpec want, have;
+    SDL_zero(want);
+    want.freq = 44100;     // Sample rate
+    want.format = AUDIO_F32SYS; // 32-bit float samples
+    want.channels = 1;     // Mono
+    want.samples = 256;    // Much smaller buffer for lower latency (~5.8ms instead of ~23ms)
+    want.callback = audio_callback;
+    want.userdata = this;
+
+    audio_device = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+    if (audio_device == 0) {
+        fprintf(stderr, "SDL audio failed to initialize: %s\n", SDL_GetError());
+        // Continue without audio - not a fatal error
+    } else {
+        // Start audio device immediately but with silence
+        SDL_PauseAudioDevice(audio_device, 0);
+    }
 }
 
 Screen::~Screen()
 {
+    // Clean up audio resources first
+    if(audio_device != 0){
+        SDL_CloseAudioDevice(audio_device);
+        audio_device = 0;
+    }
+    
     // Clean up SDL resources in reverse order of creation
     if(texture){
         SDL_DestroyTexture(texture);
@@ -114,4 +146,48 @@ void Screen::sdl_render()
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
+}
+
+// Audio callback function - generates a 440Hz square wave
+void Screen::audio_callback(void* userdata, Uint8* stream, int len)
+{
+    Screen* screen = static_cast<Screen*>(userdata);
+    float* fstream = reinterpret_cast<float*>(stream);
+    int samples = len / sizeof(float);
+    
+    static float phase = 0.0f;
+    const float frequency = 440.0f; // A4 note
+    const float sample_rate = 44100.0f;
+    const float amplitude = 0.1f; // Quiet beep
+    
+    if (screen->is_beeping) {
+        for (int i = 0; i < samples; i++) {
+            // Generate square wave
+            fstream[i] = (phase < 0.5f) ? amplitude : -amplitude;
+            phase += frequency / sample_rate;
+            if (phase >= 1.0f) phase -= 1.0f;
+        }
+    } else {
+        // Silence
+        for (int i = 0; i < samples; i++) {
+            fstream[i] = 0.0f;
+        }
+        phase = 0.0f; // Reset phase when not beeping
+    }
+}
+
+void Screen::start_beep()
+{
+    if (audio_device != 0 && !is_beeping) {
+        is_beeping = true;
+        // Audio device is already running, just change the flag
+    }
+}
+
+void Screen::stop_beep()
+{
+    if (audio_device != 0 && is_beeping) {
+        is_beeping = false;
+        // Audio device keeps running but outputs silence
+    }
 }

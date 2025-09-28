@@ -3,6 +3,7 @@
 //
 #include "Chip8.h"
 #include <unordered_map>
+#include <unistd.h> // For usleep
 
 unsigned int const FONTSET_SIZE = 80;
 unsigned int const VF = 15;
@@ -80,20 +81,22 @@ ErrorOr<void> Chip8::read_rom(StringView rom_path)
 ErrorOr<void> Chip8::run()
 {
     auto current_time_micro = current_time_microseconds();
-    auto last_cpu_time = current_time_micro;
     auto last_timer_time = current_time_micro;
-    i64 cpu_cycle_overflow = 0;
     i64 timer_overflow = 0;
     
-    i64 microseconds_per_cycle = 1000000 / timing; // 1 second = 1,000,000 microseconds
+    // Calculate timing for CPU execution
+    //i64 microseconds_per_cycle = 1000000 / timing; // Microseconds per instruction
+    int instructions_per_frame = timing / 60;      // Instructions per 60Hz frame
+    if (instructions_per_frame < 1) instructions_per_frame = 1;
     
 
+    
     constexpr i64 timer_period_microseconds = 16667; // ~60Hz
     
     while (program_counter <= 0xFFF) {
         auto now = current_time_microseconds();
         i64 timer_delta = now - last_timer_time;
-        i64 cpu_delta = now - last_cpu_time;
+
         
         // increment timers at 60Hz independent of CPU timing
         if (timer_delta + timer_overflow >= timer_period_microseconds) {
@@ -103,24 +106,38 @@ ErrorOr<void> Chip8::run()
 
             if (sound_timer > 0) {
                 sound_timer -= 1;
+                // Only stop beep if timer just reached 0
+                if (sound_timer == 0) {
+                    screen->stop_beep();
+                }
             }
+            
             timer_overflow = (timer_delta + timer_overflow) % timer_period_microseconds;
             last_timer_time = now;
         }
 
-        if (cpu_delta + cpu_cycle_overflow >= microseconds_per_cycle) {
-            handle_input();
-            if (!is_running)
-                break;
-                
-            // instruction fetch
-            auto next_instruction = get_next_instruction();
-            // instruction decode / render on draw instructions
-            TRY(decode_and_execute(next_instruction));
+        // Always handle input immediately for responsive controls
+        handle_input();
+        if (!is_running)
+            break;
             
-            cpu_cycle_overflow = (cpu_delta + cpu_cycle_overflow) % microseconds_per_cycle;
-            last_cpu_time = now;
+        // Use batch execution at 60Hz for all CPU speeds
+        if (timer_delta + timer_overflow >= timer_period_microseconds) {
+            // Execute a batch of instructions for this frame
+            for (int i = 0; i < instructions_per_frame; i++) {
+                auto next_instruction = get_next_instruction();
+                TRY(decode_and_execute(next_instruction));
+                
+                if (program_counter > 0xFFF || !is_running) {
+                    break;
+                }
+            }
+            
+            // Update timer overflow to maintain 60Hz timing
+            timer_overflow = (timer_delta + timer_overflow) % timer_period_microseconds;
+            last_timer_time = now;
         }
+
     }
     return {};
 }
@@ -465,6 +482,12 @@ void Chip8::handle_Fxxx(uint16_t instruction)
     case 0xFF18:
         Vx = get_Vx(instruction);
         sound_timer = registers[Vx];
+        // Start/stop beep immediately when sound timer is set
+        if (sound_timer > 0) {
+            screen->start_beep();
+        } else {
+            screen->stop_beep();
+        }
         break;
     case 0xF01E: // Fx1E - ADD I, Vx - Set I = I + Vx.
     case 0xF11E:
