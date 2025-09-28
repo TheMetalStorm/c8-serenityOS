@@ -4,18 +4,15 @@
 
 #include "screen.h"
 void Screen::setPixel(uint8_t x, uint8_t y, uint8_t bit, uint8_t* Vf){
-    // Clip Y coordinate to screen bounds (CHIP-8 sprites should clip, not wrap)
     if (y >= SCREEN_HEIGHT) {
-        return; // Don't draw pixels outside screen bounds
+        return; 
     }
     
-    // Wrap X coordinate as before
     x = x % SCREEN_WIDTH;
     
     auto before = video[y * SCREEN_WIDTH + x];
     video[y * SCREEN_WIDTH + x] = video[y * SCREEN_WIDTH + x] xor bit;
     if(before == 1 and bit == 1){
-        //collision
         *Vf = 1;
     }
 }
@@ -81,7 +78,6 @@ ErrorOr<void> Screen::initialize(int screen_size_factor)
         return Error::from_string_literal("Failed to create SDL texture");
     }
 
-    // Initialize SDL Audio for beep sound with minimal latency
     SDL_AudioSpec want, have;
     SDL_zero(want);
     want.freq = 44100;     // Sample rate
@@ -94,9 +90,7 @@ ErrorOr<void> Screen::initialize(int screen_size_factor)
     audio_device = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
     if (audio_device == 0) {
         fprintf(stderr, "SDL audio failed to initialize: %s\n", SDL_GetError());
-        // Continue without audio - not a fatal error
     } else {
-        // Start audio device immediately but with silence
         SDL_PauseAudioDevice(audio_device, 0);
     }
     
@@ -163,7 +157,6 @@ void Screen::sdl_render()
     SDL_RenderPresent(renderer);
 }
 
-// Audio callback function - generates a 440Hz square wave
 void Screen::audio_callback(void* userdata, Uint8* stream, int len)
 {
     Screen* screen = static_cast<Screen*>(userdata);

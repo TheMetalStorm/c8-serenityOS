@@ -36,7 +36,6 @@ private:
     SDL_Renderer *renderer = NULL;
     SDL_Texture *texture = NULL;
     
-    // Audio members
     SDL_AudioDeviceID audio_device = 0;
     bool is_beeping = false;
     static void audio_callback(void* userdata, Uint8* stream, int len);

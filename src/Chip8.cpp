@@ -84,8 +84,7 @@ ErrorOr<void> Chip8::run()
     auto last_timer_time = current_time_micro;
     i64 timer_overflow = 0;
     
-    // Calculate timing for CPU execution
-    //i64 microseconds_per_cycle = 1000000 / timing; // Microseconds per instruction
+
     int instructions_per_frame = timing / 60;      // Instructions per 60Hz frame
     if (instructions_per_frame < 1) instructions_per_frame = 1;
     
@@ -106,7 +105,6 @@ ErrorOr<void> Chip8::run()
 
             if (sound_timer > 0) {
                 sound_timer -= 1;
-                // Only stop beep if timer just reached 0
                 if (sound_timer == 0) {
                     screen->stop_beep();
                 }
@@ -116,14 +114,11 @@ ErrorOr<void> Chip8::run()
             last_timer_time = now;
         }
 
-        // Always handle input immediately for responsive controls
         handle_input();
         if (!is_running)
             break;
             
-        // Use batch execution at 60Hz for all CPU speeds
         if (timer_delta + timer_overflow >= timer_period_microseconds) {
-            // Execute a batch of instructions for this frame
             for (int i = 0; i < instructions_per_frame; i++) {
                 auto next_instruction = get_next_instruction();
                 TRY(decode_and_execute(next_instruction));
@@ -133,7 +128,6 @@ ErrorOr<void> Chip8::run()
                 }
             }
             
-            // Update timer overflow to maintain 60Hz timing
             timer_overflow = (timer_delta + timer_overflow) % timer_period_microseconds;
             last_timer_time = now;
         }
