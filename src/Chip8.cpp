@@ -2,10 +2,11 @@
 // Created by arapo on 10.09.2024.
 //
 #include "Chip8.h"
+#include <unordered_map>
 
 unsigned int const FONTSET_SIZE = 80;
 unsigned int const VF = 15;
-bool KEYS[322]; // 322 is the number of SDLK_DOWN events
+std::unordered_map<int, bool> KEYS; // Use map to handle large SDL key values safely
 
 enum chip8_sdl_key_translation {
     KEYPAD_ONE = SDLK_1,
@@ -121,9 +122,7 @@ Chip8::Chip8(int screen_size_factor)
     for (uint32_t i = 0; i < FONTSET_SIZE; ++i) {
         memory[font_start + i] = fontset[i];
     }
-    for (int i = 0; i < 322; i++) { // init them all to false
-        KEYS[i] = false;
-    }
+    // KEYS map is automatically initialized as empty (all keys default to false)
 
     for (int i = 0; i < 16; i++) { // init them all to false
         keypad[i] = false;
